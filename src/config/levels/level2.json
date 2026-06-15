@@ -5,6 +5,32 @@
   "gameDuration": 480,
   "interferenceRatio": 0.5,
   "hasHiddenRule": false,
+  "rushWaves": [
+    {
+      "triggerBatch": 3,
+      "seriesId": "LABUBU",
+      "requiredCount": 2,
+      "timeLimitSec": 25,
+      "bonusScore": 250,
+      "penaltyScore": 150
+    },
+    {
+      "triggerBatch": 6,
+      "seriesId": "MOLLY",
+      "requiredCount": 2,
+      "timeLimitSec": 25,
+      "bonusScore": 250,
+      "penaltyScore": 150
+    },
+    {
+      "triggerBatch": 9,
+      "seriesId": "DIMOO",
+      "requiredCount": 2,
+      "timeLimitSec": 25,
+      "bonusScore": 250,
+      "penaltyScore": 150
+    }
+  ],
   "series": [
     {
       "id": "LABUBU",

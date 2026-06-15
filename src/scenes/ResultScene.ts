@@ -38,7 +38,7 @@ export default class ResultScene extends Phaser.Scene {
     const panelX = GAME_WIDTH / 2 - 200;
     const panelY = 140;
     const panelWidth = 400;
-    const panelHeight = 280;
+    const panelHeight = 380;
 
     this.add.rectangle(panelX + panelWidth / 2, panelY + panelHeight / 2, panelWidth, panelHeight, COLORS.uiPanel)
       .setStrokeStyle(3, COLORS.uiBorder);
@@ -49,20 +49,24 @@ export default class ResultScene extends Phaser.Scene {
       { label: '返工次数', value: this.gameStats.reworks.toString(), color: '#fbbf24' },
       { label: '平均拆摆秒数', value: `${this.gameStats.averageUnpackSeconds.toFixed(1)}s`, color: '#60a5fa' },
       { label: '总错放次数', value: this.gameStats.wrongPlacements.toString(), color: '#f87171' },
+      { label: '催单完成', value: this.gameStats.rushWavesCompleted.toString(), color: '#4ade80' },
+      { label: '催单失败', value: this.gameStats.rushWavesFailed.toString(), color: '#f87171' },
+      { label: '催单奖励', value: `+${this.gameStats.rushWaveBonuses}`, color: '#4ade80' },
+      { label: '催单惩罚', value: `-${this.gameStats.rushWavePenalties}`, color: '#f87171' },
       { label: '最终得分', value: this.gameStats.score.toString(), color: '#fbbf24' },
       { label: '陈列分', value: this.gameStats.displayScore.toString(), color: '#4ade80' }
     ];
 
     stats.forEach((stat, index) => {
-      const y = panelY + 35 + index * 35;
+      const y = panelY + 35 + index * 30;
 
       this.add.text(panelX + 30, y, stat.label, {
-        fontSize: '16px',
+        fontSize: '15px',
         color: '#ccccdd'
       });
 
       this.add.text(panelX + panelWidth - 30, y, stat.value, {
-        fontSize: '16px',
+        fontSize: '15px',
         fontStyle: 'bold',
         color: stat.color
       }).setOrigin(1, 0);
@@ -71,9 +75,9 @@ export default class ResultScene extends Phaser.Scene {
 
   private createConfusionRanking(): void {
     const panelX = GAME_WIDTH / 2 - 250;
-    const panelY = 440;
+    const panelY = 540;
     const panelWidth = 500;
-    const panelHeight = 180;
+    const panelHeight = 140;
 
     this.add.rectangle(panelX + panelWidth / 2, panelY + panelHeight / 2, panelWidth, panelHeight, COLORS.uiPanel)
       .setStrokeStyle(3, COLORS.uiBorder);
@@ -148,7 +152,7 @@ export default class ResultScene extends Phaser.Scene {
   }
 
   private createButtons(): void {
-    const buttonY = 650;
+    const buttonY = 700;
     const spacing = 220;
     const startX = GAME_WIDTH / 2 - spacing;
 

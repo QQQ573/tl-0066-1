@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS, GAME_CONFIG } from '../config/constants';
-import { LevelConfig, GameStats, Slot, BoxConfig } from '../types/game';
+import { LevelConfig, GameStats, Slot, BoxConfig, RushWave } from '../types/game';
 import { getLevel, generateBatchBoxes, formatTime } from '../utils/levelLoader';
 import EndBoxGameObject from '../gameobjects/EndBoxGameObject';
 import SingleBoxGameObject from '../gameobjects/SingleBoxGameObject';
@@ -39,6 +39,19 @@ export default class GameScene extends Phaser.Scene {
   private isDraggingEndBox: boolean = false;
   private draggedEndBox: EndBoxGameObject | null = null;
 
+  private currentRushWave: RushWave | null = null;
+  private rushWaveCount: number = 0;
+  private rushWaveTimer: number = 0;
+  private rushWaveProgress: number = 0;
+  private rushWaveActive: boolean = false;
+  private rushWaveBanner!: Phaser.GameObjects.Container;
+  private rushWaveText!: Phaser.GameObjects.Text;
+  private rushWaveProgressText!: Phaser.GameObjects.Text;
+  private rushWaveTimerText!: Phaser.GameObjects.Text;
+  private rushWavePulseTween!: Phaser.Tweens.Tween | null;
+  private slotFlashTweens: Map<string, Phaser.Tweens.Tween> = new Map();
+  private triggeredRushWaves: Set<number> = new Set();
+
   constructor() {
     super('GameScene');
   }
@@ -58,6 +71,13 @@ export default class GameScene extends Phaser.Scene {
     this.isDraggingEndBox = false;
     this.draggedEndBox = null;
 
+    this.currentRushWave = null;
+    this.rushWaveCount = 0;
+    this.rushWaveTimer = 0;
+    this.rushWaveProgress = 0;
+    this.rushWaveActive = false;
+    this.triggeredRushWaves = new Set();
+
     this.gameStats = {
       totalBatches: this.level.totalBatches,
       completedBatches: 0,
@@ -68,7 +88,11 @@ export default class GameScene extends Phaser.Scene {
       seriesConfusionCount: {},
       score: 0,
       displayScore: 1000,
-      wrongPlacements: 0
+      wrongPlacements: 0,
+      rushWavesCompleted: 0,
+      rushWavesFailed: 0,
+      rushWaveBonuses: 0,
+      rushWavePenalties: 0
     };
 
     this.level.series.forEach(s => {
@@ -82,6 +106,7 @@ export default class GameScene extends Phaser.Scene {
     this.createUnpackZone();
     this.createSlots();
     this.createHUD();
+    this.createRushWaveBanner();
     this.setupInput();
     this.spawnEndBox();
 
@@ -213,6 +238,41 @@ export default class GameScene extends Phaser.Scene {
     }).setOrigin(0.5);
   }
 
+  private createRushWaveBanner(): void {
+    this.rushWaveBanner = this.add.container(0, -100);
+    this.rushWaveBanner.setDepth(150);
+
+    const bannerBg = this.add.rectangle(
+      GAME_WIDTH / 2, 50, GAME_WIDTH, 80,
+      0x000000, 0.9
+    ).setStrokeStyle(3, 0xfbbf24);
+
+    this.rushWaveText = this.add.text(
+      GAME_WIDTH / 2, 35, '', {
+        fontSize: '20px',
+        fontStyle: 'bold',
+        color: '#fbbf24'
+      }
+    ).setOrigin(0.5);
+
+    this.rushWaveProgressText = this.add.text(
+      GAME_WIDTH / 2, 55, '', {
+        fontSize: '18px',
+        color: '#ffffff'
+      }
+    ).setOrigin(0.5);
+
+    this.rushWaveTimerText = this.add.text(
+      GAME_WIDTH - 80, 50, '', {
+        fontSize: '24px',
+        fontStyle: 'bold',
+        color: '#f87171'
+      }
+    ).setOrigin(0.5);
+
+    this.rushWaveBanner.add([bannerBg, this.rushWaveText, this.rushWaveProgressText, this.rushWaveTimerText]);
+  }
+
   private setupInput(): void {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (this.isPaused || this.isReworking) return;
@@ -297,6 +357,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.currentBatch++;
     this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
+
+    this.checkRushWaveTrigger();
 
     this._unpackZoneLabel.setText('拆盒区\n等待下一批...');
   }
@@ -392,6 +454,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.gameStats.score += GAME_CONFIG.displayScorePerCorrect;
     this.scoreText.setText(`得分: ${this.gameStats.score}`);
+
+    this.updateRushWaveProgress(box.getSeriesId());
 
     this.showHint('✓ 放置正确！', COLORS.success);
 
@@ -553,6 +617,13 @@ export default class GameScene extends Phaser.Scene {
       }
       this.slotOccupied.set(slotId, false);
     });
+
+    if (this.rushWaveActive) {
+      this.stopSlotFlashing();
+      this.hideRushWaveBanner();
+      this.currentRushWave = null;
+      this.rushWaveActive = false;
+    }
   }
 
   private checkBatchComplete(): void {
@@ -584,11 +655,201 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  private checkRushWaveTrigger(): void {
+    if (this.rushWaveActive) return;
+
+    const nextBatch = this.currentBatch;
+    const rushWave = this.level.rushWaves.find(
+      w => w.triggerBatch === nextBatch && !this.triggeredRushWaves.has(w.triggerBatch)
+    );
+
+    if (rushWave) {
+      if (this.level.hasHiddenRule) {
+        const series = this.level.series.find(s => s.id === rushWave.seriesId);
+        if (series?.isHidden) {
+          console.warn('催单不能要求隐藏款入常规槽，跳过此催单');
+          this.triggeredRushWaves.add(rushWave.triggerBatch);
+          return;
+        }
+      }
+
+      this.startRushWave(rushWave);
+    }
+  }
+
+  private startRushWave(rushWave: RushWave): void {
+    this.currentRushWave = rushWave;
+    this.rushWaveActive = true;
+    this.rushWaveProgress = 0;
+    this.rushWaveTimer = rushWave.timeLimitSec;
+    this.rushWaveCount++;
+    this.triggeredRushWaves.add(rushWave.triggerBatch);
+
+    const series = this.level.series.find(s => s.id === rushWave.seriesId)!;
+
+    this.rushWaveText.setText(`📣 催单：${series.name} × ${rushWave.requiredCount}`);
+    this.rushWaveProgressText.setText(`进度：${this.rushWaveProgress}/${rushWave.requiredCount}`);
+    this.rushWaveTimerText.setText(`${this.rushWaveTimer}s`);
+
+    this.tweens.add({
+      targets: this.rushWaveBanner,
+      y: 0,
+      duration: 500,
+      ease: 'Bounce.easeOut'
+    });
+
+    this.startSlotFlashing(rushWave.seriesId);
+    this.showHint(`🔥 催单来袭！${series.name} × ${rushWave.requiredCount}`, COLORS.warning);
+  }
+
+  private updateRushWaveProgress(seriesId: string): void {
+    if (!this.rushWaveActive || !this.currentRushWave) return;
+
+    if (seriesId === this.currentRushWave.seriesId) {
+      this.rushWaveProgress++;
+      this.rushWaveProgressText.setText(`进度：${this.rushWaveProgress}/${this.currentRushWave.requiredCount}`);
+
+      if (this.rushWaveProgress >= this.currentRushWave.requiredCount) {
+        this.completeRushWave();
+      }
+    }
+  }
+
+  private updateRushWaveTimer(): void {
+    if (!this.rushWaveActive || !this.currentRushWave) return;
+
+    this.rushWaveTimer--;
+    this.rushWaveTimerText.setText(`${this.rushWaveTimer}s`);
+
+    if (this.rushWaveTimer <= 5) {
+      this.rushWaveTimerText.setColor('#f87171');
+    }
+
+    if (this.rushWaveTimer <= 0) {
+      this.failRushWave();
+    }
+  }
+
+  private completeRushWave(): void {
+    const rushWave = this.currentRushWave;
+    if (!rushWave) return;
+
+    this.gameStats.rushWavesCompleted++;
+    this.gameStats.rushWaveBonuses += rushWave.bonusScore;
+    this.gameStats.displayScore += rushWave.bonusScore;
+    this.displayScoreText.setText(`陈列: ${this.gameStats.displayScore}`);
+
+    this.showHint(`✓ 催单完成！+${rushWave.bonusScore} 陈列分`, COLORS.success);
+
+    this.showGreenPulse();
+    this.stopSlotFlashing();
+
+    this.time.delayedCall(1000, () => {
+      this.hideRushWaveBanner();
+    });
+
+    this.currentRushWave = null;
+    this.rushWaveActive = false;
+  }
+
+  private failRushWave(): void {
+    const rushWave = this.currentRushWave;
+    if (!rushWave) return;
+
+    this.gameStats.rushWavesFailed++;
+    this.gameStats.rushWavePenalties += rushWave.penaltyScore;
+    this.gameStats.displayScore -= rushWave.penaltyScore;
+    this.displayScoreText.setText(`陈列: ${this.gameStats.displayScore}`);
+
+    this.showHint(`✗ 催单超时！-${rushWave.penaltyScore} 陈列分`, COLORS.error);
+
+    this.stopSlotFlashing();
+
+    this.time.delayedCall(1500, () => {
+      this.hideRushWaveBanner();
+    });
+
+    this.currentRushWave = null;
+    this.rushWaveActive = false;
+  }
+
+  private hideRushWaveBanner(): void {
+    this.tweens.add({
+      targets: this.rushWaveBanner,
+      y: -100,
+      duration: 500,
+      ease: 'Cubic.easeIn'
+    });
+  }
+
+  private startSlotFlashing(seriesId: string): void {
+    const targetSlots = this.level.slots.filter(s => s.seriesId === seriesId && !s.isHidden);
+
+    targetSlots.forEach(slot => {
+      const slotSprite = this.slotSprites.get(slot.id);
+      if (slotSprite) {
+        const series = this.level.series.find(s => s.id === seriesId)!;
+        const tween = this.tweens.add({
+          targets: slotSprite,
+          strokeColor: [series.borderColor, 0xffffff, series.borderColor],
+          duration: 800,
+          yoyo: true,
+          repeat: -1
+        });
+        this.slotFlashTweens.set(slot.id, tween);
+      }
+    });
+  }
+
+  private stopSlotFlashing(): void {
+    this.slotFlashTweens.forEach((tween, slotId) => {
+      tween.stop();
+      const slotSprite = this.slotSprites.get(slotId);
+      const slot = this.level.slots.find(s => s.id === slotId);
+      if (slotSprite && slot) {
+        const series = this.level.series.find(s => s.id === slot.seriesId)!;
+        slotSprite.setStrokeStyle(3, series.borderColor);
+      }
+    });
+    this.slotFlashTweens.clear();
+  }
+
+  private showGreenPulse(): void {
+    const pulse = this.add.rectangle(
+      GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT,
+      COLORS.success, 0
+    ).setDepth(180);
+
+    this.tweens.add({
+      targets: pulse,
+      alpha: { from: 0, to: 0.3, yoyo: true },
+      duration: 300,
+      repeat: 2,
+      onComplete: () => {
+        pulse.destroy();
+      }
+    });
+
+    if (this.rushWavePulseTween) {
+      this.rushWavePulseTween.remove();
+    }
+
+    const bannerBg = this.rushWaveBanner.getAt(0) as Phaser.GameObjects.Rectangle;
+    this.rushWavePulseTween = this.tweens.add({
+      targets: bannerBg,
+      strokeColor: [0xfbbf24, COLORS.success, 0xfbbf24],
+      duration: 200,
+      repeat: 3
+    });
+  }
+
   private updateTimer(): void {
     if (this.isPaused || this.isReworking) return;
 
     this.timeRemaining--;
     this.timerText.setText(`⏱️ ${formatTime(this.timeRemaining)}`);
+
+    this.updateRushWaveTimer();
 
     if (this.timeRemaining <= 60) {
       this.timerText.setColor('#f87171');

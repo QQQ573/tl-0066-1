@@ -5,6 +5,32 @@
   "gameDuration": 480,
   "interferenceRatio": 0.6,
   "hasHiddenRule": true,
+  "rushWaves": [
+    {
+      "triggerBatch": 3,
+      "seriesId": "LABUBU",
+      "requiredCount": 2,
+      "timeLimitSec": 20,
+      "bonusScore": 300,
+      "penaltyScore": 200
+    },
+    {
+      "triggerBatch": 6,
+      "seriesId": "SKULLPANDA",
+      "requiredCount": 2,
+      "timeLimitSec": 20,
+      "bonusScore": 300,
+      "penaltyScore": 200
+    },
+    {
+      "triggerBatch": 9,
+      "seriesId": "MOLLY",
+      "requiredCount": 2,
+      "timeLimitSec": 20,
+      "bonusScore": 300,
+      "penaltyScore": 200
+    }
+  ],
   "series": [
     {
       "id": "LABUBU",

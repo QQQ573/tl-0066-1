@@ -28,6 +28,15 @@ export interface BatchConfig {
   maxBoxes: number;
 }
 
+export interface RushWave {
+  triggerBatch: number;
+  seriesId: string;
+  requiredCount: number;
+  timeLimitSec: number;
+  bonusScore: number;
+  penaltyScore: number;
+}
+
 export interface LevelConfig {
   levelId: number;
   levelName: string;
@@ -35,6 +44,7 @@ export interface LevelConfig {
   gameDuration: number;
   interferenceRatio: number;
   hasHiddenRule: boolean;
+  rushWaves: RushWave[];
   series: Series[];
   slots: Slot[];
   conveyorBelt: {
@@ -62,6 +72,10 @@ export interface GameStats {
   score: number;
   displayScore: number;
   wrongPlacements: number;
+  rushWavesCompleted: number;
+  rushWavesFailed: number;
+  rushWaveBonuses: number;
+  rushWavePenalties: number;
 }
 
 export interface SingleBox {
