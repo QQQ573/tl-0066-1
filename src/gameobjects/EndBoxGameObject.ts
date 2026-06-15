@@ -112,7 +112,7 @@ export default class EndBoxGameObject extends Phaser.GameObjects.Container {
       duration: 300,
       ease: 'Back.in',
       onComplete: () => {
-        this.emit('boxopened', this.boxes, this.x, this.y);
+        this.emit('boxopened', this.boxes, this.x, this.y, this);
         this.destroy();
       }
     });

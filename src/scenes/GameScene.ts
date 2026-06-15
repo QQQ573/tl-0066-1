@@ -61,7 +61,7 @@ export default class GameScene extends Phaser.Scene {
     this.currentLevelId = this.registry.get('currentLevel') || 1;
     this.level = getLevel(this.currentLevelId);
     this.timeRemaining = this.level.gameDuration;
-    this.currentBatch = 0;
+    this.currentBatch = 1;
     this.consecutiveWrong = 0;
     this.batchUnpackTimes = [];
     this.endBoxes = [];
@@ -111,6 +111,7 @@ export default class GameScene extends Phaser.Scene {
     this.createRushWaveBanner();
     this.setupInput();
     this.spawnEndBox();
+    this.checkRushWaveTrigger();
 
     this.time.addEvent({
       delay: 1000,
@@ -338,7 +339,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private spawnEndBox(): void {
-    if (this.currentBatch >= this.level.totalBatches) return;
+    if (this.currentBatch > this.level.totalBatches) return;
     if (this.endBoxes.length > 0 || this.singleBoxes.length > 0) return;
 
     const boxes = generateBatchBoxes(this.level);
@@ -352,23 +353,18 @@ export default class GameScene extends Phaser.Scene {
     this.activeEndBox = endBox;
   }
 
-  private handleBoxOpened(boxes: BoxConfig[], x: number, y: number): void {
+  private handleBoxOpened(boxes: BoxConfig[], x: number, y: number, endBox: EndBoxGameObject): void {
     const now = this.time.now;
     const unpackTime = (now - this.batchStartTime) / 1000;
     this.batchUnpackTimes.push(unpackTime);
 
     this.spawnSingleBoxes(boxes, x, y);
 
-    const endBoxIndex = this.endBoxes.findIndex(b => b.getIsOpened());
+    const endBoxIndex = this.endBoxes.indexOf(endBox);
     if (endBoxIndex > -1) {
       this.endBoxes.splice(endBoxIndex, 1);
     }
     this.activeEndBox = null;
-
-    this.currentBatch++;
-    this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
-
-    this.checkRushWaveTrigger();
 
     this._unpackZoneLabel.setText('拆盒区\n等待下一批...');
   }
@@ -624,10 +620,13 @@ export default class GameScene extends Phaser.Scene {
       this.failRushWaveSilently();
     }
 
+    this.currentBatch++;
+    this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
+
+    this.checkRushWaveTrigger();
+
     this.time.delayedCall(2000, () => {
       this.clearCurrentBatch();
-      this.currentBatch++;
-      this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
       this.isPaused = false;
       this.isBatchCompleting = false;
       this.checkGameEnd();
@@ -677,6 +676,11 @@ export default class GameScene extends Phaser.Scene {
         this.failRushWaveSilently();
       }
 
+      this.currentBatch++;
+      this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
+
+      this.checkRushWaveTrigger();
+
       this.time.delayedCall(1000, () => {
         this.clearCurrentBatch();
         this.isBatchCompleting = false;
@@ -686,7 +690,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private checkGameEnd(): void {
-    if (this.currentBatch >= this.level.totalBatches || this.timeRemaining <= 0) {
+    if (this.currentBatch > this.level.totalBatches || this.timeRemaining <= 0) {
       this.endGame();
     } else {
       this._unpackZoneLabel.setText('拆盒区\n将端盒拖到这里');
@@ -954,6 +958,7 @@ export default class GameScene extends Phaser.Scene {
         }
         this.currentBatch++;
         this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
+        this.checkRushWaveTrigger();
         this.checkGameEnd();
       }
     }
