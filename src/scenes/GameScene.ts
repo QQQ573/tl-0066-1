@@ -32,6 +32,7 @@ export default class GameScene extends Phaser.Scene {
 
   private isPaused: boolean = false;
   private isReworking: boolean = false;
+  private isBatchCompleting: boolean = false;
   private reworkOverlay!: Phaser.GameObjects.Container;
 
   private endBoxDragOffsetX: number = 0;
@@ -68,6 +69,7 @@ export default class GameScene extends Phaser.Scene {
     this.activeEndBox = null;
     this.isPaused = false;
     this.isReworking = false;
+    this.isBatchCompleting = false;
     this.isDraggingEndBox = false;
     this.draggedEndBox = null;
 
@@ -316,6 +318,14 @@ export default class GameScene extends Phaser.Scene {
       const isInZone = this.isInUnpackZone(this.draggedEndBox.x, this.draggedEndBox.y);
       this.draggedEndBox.setInZone(isInZone);
       this.draggedEndBox.setDepth(10);
+
+      if (isInZone) {
+        const zone = this.level.unpackZone;
+        const targetX = Math.max(zone.x + 70, Math.min(zone.x + zone.width - 70, this.draggedEndBox.x));
+        const targetY = Math.max(zone.y + 50, Math.min(zone.y + zone.height - 50, this.draggedEndBox.y));
+        this.draggedEndBox.x = targetX;
+        this.draggedEndBox.y = targetY;
+      }
     }
     this.isDraggingEndBox = false;
     this.draggedEndBox = null;
@@ -390,7 +400,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private handleSingleBoxDropped(box: SingleBoxGameObject): void {
-    if (this.isPaused || this.isReworking) return;
+    if (this.isPaused || this.isReworking || this.isBatchCompleting) return;
 
     const targetSlot = this.findTargetSlot(box.x, box.y);
 
@@ -494,6 +504,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private triggerRework(): void {
+    if (this.isReworking) return;
+
     this.isReworking = true;
     this.consecutiveWrong = 0;
     this.gameStats.reworks++;
@@ -506,6 +518,7 @@ export default class GameScene extends Phaser.Scene {
       this.resetCurrentBatch();
       this.hideReworkOverlay();
       this.isReworking = false;
+      this.isBatchCompleting = false;
       this.showHint('返工完成，请重新摆放', COLORS.warning);
     });
   }
@@ -587,17 +600,36 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  private failRushWaveSilently(): void {
+    if (!this.currentRushWave) return;
+    this.gameStats.rushWavesFailed++;
+    this.gameStats.rushWavePenalties += this.currentRushWave.penaltyScore;
+    this.gameStats.displayScore -= this.currentRushWave.penaltyScore;
+    this.displayScoreText.setText(`陈列: ${this.gameStats.displayScore}`);
+    this.stopSlotFlashing();
+    this.hideRushWaveBanner();
+    this.currentRushWave = null;
+    this.rushWaveActive = false;
+  }
+
   private failBatch(): void {
+    if (this.isPaused) return;
+
     this.gameStats.failedBatches++;
     this.showHint('✗ 隐藏款放错！本批失败！', COLORS.error);
 
     this.isPaused = true;
+
+    if (this.rushWaveActive && this.currentRushWave) {
+      this.failRushWaveSilently();
+    }
 
     this.time.delayedCall(2000, () => {
       this.clearCurrentBatch();
       this.currentBatch++;
       this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
       this.isPaused = false;
+      this.isBatchCompleting = false;
       this.checkGameEnd();
     });
   }
@@ -627,9 +659,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private checkBatchComplete(): void {
+    if (this.isBatchCompleting) return;
+
     const allPlaced = this.singleBoxes.every(box => box.getIsPlaced());
 
     if (allPlaced) {
+      this.isBatchCompleting = true;
       this.gameStats.completedBatches++;
 
       const now = this.time.now;
@@ -638,8 +673,13 @@ export default class GameScene extends Phaser.Scene {
 
       this.showHint('✓ 本批完成！', COLORS.success);
 
+      if (this.rushWaveActive && this.currentRushWave) {
+        this.failRushWaveSilently();
+      }
+
       this.time.delayedCall(1000, () => {
         this.clearCurrentBatch();
+        this.isBatchCompleting = false;
         this.checkGameEnd();
       });
     }
@@ -739,10 +779,17 @@ export default class GameScene extends Phaser.Scene {
     this.gameStats.displayScore += rushWave.bonusScore;
     this.displayScoreText.setText(`陈列: ${this.gameStats.displayScore}`);
 
-    this.showHint(`✓ 催单完成！+${rushWave.bonusScore} 陈列分`, COLORS.success);
-
-    this.showGreenPulse();
     this.stopSlotFlashing();
+
+    if (this.isBatchCompleting) {
+      this.hideRushWaveBanner();
+      this.currentRushWave = null;
+      this.rushWaveActive = false;
+      return;
+    }
+
+    this.showHint(`✓ 催单完成！+${rushWave.bonusScore} 陈列分`, COLORS.success);
+    this.showGreenPulse();
 
     this.time.delayedCall(1000, () => {
       this.hideRushWaveBanner();
@@ -761,9 +808,16 @@ export default class GameScene extends Phaser.Scene {
     this.gameStats.displayScore -= rushWave.penaltyScore;
     this.displayScoreText.setText(`陈列: ${this.gameStats.displayScore}`);
 
-    this.showHint(`✗ 催单超时！-${rushWave.penaltyScore} 陈列分`, COLORS.error);
-
     this.stopSlotFlashing();
+
+    if (this.isBatchCompleting) {
+      this.hideRushWaveBanner();
+      this.currentRushWave = null;
+      this.rushWaveActive = false;
+      return;
+    }
+
+    this.showHint(`✗ 催单超时！-${rushWave.penaltyScore} 陈列分`, COLORS.error);
 
     this.time.delayedCall(1500, () => {
       this.hideRushWaveBanner();
@@ -884,18 +938,17 @@ export default class GameScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if (this.isPaused || this.isReworking) return;
 
-    this.endBoxes.forEach(endBox => {
-      if (endBox.getIsOpened()) return;
-      if (this.isDraggingEndBox && this.draggedEndBox === endBox) return;
+    for (let i = this.endBoxes.length - 1; i >= 0; i--) {
+      const endBox = this.endBoxes[i];
+      if (endBox.getIsOpened()) continue;
+      if (this.isDraggingEndBox && this.draggedEndBox === endBox) continue;
+      if (endBox.getIsInZone()) continue;
 
       endBox.x += this.level.conveyorBelt.speed * (delta / 1000);
 
       if (endBox.x > GAME_WIDTH + 100) {
         endBox.destroy();
-        const index = this.endBoxes.indexOf(endBox);
-        if (index > -1) {
-          this.endBoxes.splice(index, 1);
-        }
+        this.endBoxes.splice(i, 1);
         if (this.activeEndBox === endBox) {
           this.activeEndBox = null;
         }
@@ -903,6 +956,6 @@ export default class GameScene extends Phaser.Scene {
         this.batchText.setText(`批次: ${this.currentBatch}/${this.level.totalBatches}`);
         this.checkGameEnd();
       }
-    });
+    }
   }
 }

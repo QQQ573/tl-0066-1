@@ -135,6 +135,10 @@ export default class EndBoxGameObject extends Phaser.GameObjects.Container {
     return this.isOpened;
   }
 
+  public getIsInZone(): boolean {
+    return this.isInZone;
+  }
+
   public getBoxes(): BoxConfig[] {
     return this.boxes;
   }
