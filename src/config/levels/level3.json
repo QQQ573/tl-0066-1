@@ -1,0 +1,136 @@
+{
+  "levelId": 3,
+  "levelName": "隐藏款警戒",
+  "totalBatches": 12,
+  "gameDuration": 480,
+  "interferenceRatio": 0.6,
+  "hasHiddenRule": true,
+  "series": [
+    {
+      "id": "LABUBU",
+      "name": "Labubu",
+      "color": 16739229,
+      "borderColor": 16728193
+    },
+    {
+      "id": "DIMOO",
+      "name": "Dimoo",
+      "color": 5227511,
+      "borderColor": 16321
+    },
+    {
+      "id": "MOLLY",
+      "name": "Molly",
+      "color": 16766287,
+      "borderColor": 16744448
+    },
+    {
+      "id": "SKULLPANDA",
+      "name": "Skullpanda",
+      "color": 12216520,
+      "borderColor": 8068002
+    },
+    {
+      "id": "HIDDEN",
+      "name": "隐藏款",
+      "color": 16766720,
+      "borderColor": 16744448,
+      "isHidden": true
+    }
+  ],
+  "slots": [
+    {
+      "id": "slot-1",
+      "seriesId": "LABUBU",
+      "x": 100,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-2",
+      "seriesId": "DIMOO",
+      "x": 200,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-3",
+      "seriesId": "MOLLY",
+      "x": 300,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-4",
+      "seriesId": "SKULLPANDA",
+      "x": 400,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-5",
+      "seriesId": "LABUBU",
+      "x": 500,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-6",
+      "seriesId": "DIMOO",
+      "x": 600,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-7",
+      "seriesId": "MOLLY",
+      "x": 700,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-8",
+      "seriesId": "SKULLPANDA",
+      "x": 800,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-9",
+      "seriesId": "LABUBU",
+      "x": 900,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-hidden",
+      "seriesId": "HIDDEN",
+      "x": 1050,
+      "y": 520,
+      "width": 100,
+      "height": 80,
+      "isHidden": true
+    }
+  ],
+  "conveyorBelt": {
+    "x": 0,
+    "y": 200,
+    "width": 1280,
+    "speed": 120
+  },
+  "unpackZone": {
+    "x": 440,
+    "y": 300,
+    "width": 400,
+    "height": 180
+  }
+}

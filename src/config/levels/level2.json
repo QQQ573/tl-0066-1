@@ -1,0 +1,106 @@
+{
+  "levelId": 2,
+  "levelName": "繁忙周末",
+  "totalBatches": 12,
+  "gameDuration": 480,
+  "interferenceRatio": 0.5,
+  "hasHiddenRule": false,
+  "series": [
+    {
+      "id": "LABUBU",
+      "name": "Labubu",
+      "color": 16739229,
+      "borderColor": 16728193
+    },
+    {
+      "id": "DIMOO",
+      "name": "Dimoo",
+      "color": 5227511,
+      "borderColor": 16321
+    },
+    {
+      "id": "MOLLY",
+      "name": "Molly",
+      "color": 16766287,
+      "borderColor": 16744448
+    }
+  ],
+  "slots": [
+    {
+      "id": "slot-1",
+      "seriesId": "LABUBU",
+      "x": 140,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-2",
+      "seriesId": "DIMOO",
+      "x": 260,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-3",
+      "seriesId": "MOLLY",
+      "x": 380,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-4",
+      "seriesId": "LABUBU",
+      "x": 500,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-5",
+      "seriesId": "DIMOO",
+      "x": 620,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-6",
+      "seriesId": "MOLLY",
+      "x": 740,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-7",
+      "seriesId": "LABUBU",
+      "x": 860,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-8",
+      "seriesId": "DIMOO",
+      "x": 980,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    }
+  ],
+  "conveyorBelt": {
+    "x": 0,
+    "y": 200,
+    "width": 1280,
+    "speed": 100
+  },
+  "unpackZone": {
+    "x": 440,
+    "y": 300,
+    "width": 400,
+    "height": 180
+  }
+}

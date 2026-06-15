@@ -1,0 +1,84 @@
+{
+  "levelId": 1,
+  "levelName": "新手训练日",
+  "totalBatches": 12,
+  "gameDuration": 480,
+  "interferenceRatio": 0.3,
+  "hasHiddenRule": false,
+  "series": [
+    {
+      "id": "LABUBU",
+      "name": "Labubu",
+      "color": 16739229,
+      "borderColor": 16728193
+    },
+    {
+      "id": "DIMOO",
+      "name": "Dimoo",
+      "color": 5227511,
+      "borderColor": 16321
+    }
+  ],
+  "slots": [
+    {
+      "id": "slot-1",
+      "seriesId": "LABUBU",
+      "x": 200,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-2",
+      "seriesId": "DIMOO",
+      "x": 320,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-3",
+      "seriesId": "LABUBU",
+      "x": 440,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-4",
+      "seriesId": "DIMOO",
+      "x": 560,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-5",
+      "seriesId": "LABUBU",
+      "x": 680,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "id": "slot-6",
+      "seriesId": "DIMOO",
+      "x": 800,
+      "y": 520,
+      "width": 80,
+      "height": 80
+    }
+  ],
+  "conveyorBelt": {
+    "x": 0,
+    "y": 200,
+    "width": 1280,
+    "speed": 80
+  },
+  "unpackZone": {
+    "x": 440,
+    "y": 300,
+    "width": 400,
+    "height": 180
+  }
+}
